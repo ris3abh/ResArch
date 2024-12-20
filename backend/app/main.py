@@ -14,6 +14,12 @@ app = FastAPI(
     version=VERSION,
 )
 
+BACKEND_CORS_ORIGINS = [
+    "http://localhost:5173",    # Vite dev server
+    "http://localhost:3000",    # Next.js (if needed)
+    "http://localhost:8000",    # FastAPI backend
+]
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
