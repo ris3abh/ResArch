@@ -15,6 +15,7 @@ import {
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
+import { WelcomeModal } from './WelcomeModal';
 
 interface LoginModalProps {
     open: boolean;
@@ -32,6 +33,7 @@ export const LoginModal = ({ open, onClose, onSuccess, onSwitchToSignup }: Login
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -41,12 +43,10 @@ export const LoginModal = ({ open, onClose, onSuccess, onSwitchToSignup }: Login
         try {
             const response = await api.login(formData);
             if (response.data && response.data.access_token) {
-                // Store the token
                 localStorage.setItem('token', response.data.access_token);
                 onSuccess();
                 onClose();
-                // Navigate to dashboard after successful login
-                navigate('/dashboard');
+                setShowWelcomeModal(true); // Just show welcome modal
             } else {
                 setError(response.error || 'Login failed: No token received');
             }
@@ -56,10 +56,12 @@ export const LoginModal = ({ open, onClose, onSuccess, onSwitchToSignup }: Login
         } finally {
             setLoading(false);
         }
-    };    
+    };
+
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+        <>
+            <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
             <DialogTitle sx={{ 
                 color: theme.palette.deepPurple.main,
                 textAlign: 'center',
@@ -144,5 +146,13 @@ export const LoginModal = ({ open, onClose, onSuccess, onSwitchToSignup }: Login
                 </DialogActions>
             </form>
         </Dialog>
+        {showWelcomeModal && (
+                <WelcomeModal 
+                    open={showWelcomeModal}
+                    onClose={() => setShowWelcomeModal(false)}
+                />
+            )}
+        </>
+        
     );
 };

@@ -1,9 +1,15 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import API_TITLE, API_DESCRIPTION, VERSION, API_V1_STR, BACKEND_CORS_ORIGINS
-from app.core.database import engine
+from app.core.database import engine, SessionLocal
 from app.models import Base
 from app.api.v1 import api_router
+from app.core.init_db import init_predefined_templates
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -31,6 +37,18 @@ app.add_middleware(
 
 # Include API router
 app.include_router(api_router, prefix=API_V1_STR)
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize application on startup"""
+    try:
+        db = SessionLocal()
+        await init_predefined_templates(db)
+        logger.info("Successfully initialized predefined templates")
+    except Exception as e:
+        logger.error(f"Error initializing predefined templates: {str(e)}")
+    finally:
+        db.close()
 
 @app.get("/")
 async def root():

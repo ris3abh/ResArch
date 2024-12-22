@@ -1,16 +1,26 @@
+# schemas/resume.py
 from pydantic import BaseModel
-from typing import Dict, Any
-from .base import BaseSchema
+from typing import Optional
+from datetime import datetime
 
 class ResumeBase(BaseModel):
-    title: str
-    content: str | None = None
-    resume_metadata: Dict[str, Any] | None = None
+    content: str
+    template_id: Optional[str] = None
 
 class ResumeCreate(ResumeBase):
-    user_id: int
-    template_id: int
+    pass
 
-class Resume(ResumeBase, BaseSchema):
+class Resume(ResumeBase):
+    id: int
     user_id: int
-    template_id: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        orm_mode = True
+
+class LatexCompileRequest(BaseModel):
+    content: str
+
+class CompileResponse(BaseModel):
+    message: str

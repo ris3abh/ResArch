@@ -37,7 +37,7 @@ const HomePage = () => {
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: '#FAFAFA' }}>
-      <Container maxWidth={false} sx={{ width: '100%', py: 8 }}>
+      <Container maxWidth={'xl'} sx={{ width: '100%', py: 8 }}>
         <Box 
             sx={{
               display: 'flex',
