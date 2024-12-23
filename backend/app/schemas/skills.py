@@ -1,25 +1,53 @@
-from pydantic import BaseModel
-from .base import BaseSchema
-from app.models.skills import SkillCategory
+# schemas/skills.py
+from pydantic import BaseModel, Field
+from typing import Optional, List, Dict
+from enum import Enum
+
+class SkillCategory(str, Enum):
+    soft = "soft"
+    technical = "technical"
+    hard = "hard"
 
 class SkillBase(BaseModel):
     name: str
     category: SkillCategory
-    description: str | None = None
 
 class SkillCreate(SkillBase):
-    pass
+    source: Optional[str] = None
 
-class Skill(SkillBase, BaseSchema):
-    pass
+class Skill(SkillBase):
+    id: int
+    source: Optional[str]
+
+    class Config:
+        orm_mode = True
 
 class UserSkillBase(BaseModel):
-    user_id: int
     skill_id: int
-    proficiency_level: int
+    rating: float = Field(ge=0, le=5)  # Rating between 0 and 5
 
 class UserSkillCreate(UserSkillBase):
     pass
 
-class UserSkill(UserSkillBase, BaseSchema):
+class UserSkill(UserSkillBase):
+    id: int
     skill: Skill
+
+    class Config:
+        orm_mode = True
+
+# New schemas for batch operations
+class SkillWithRating(BaseModel):
+    name: str
+    rating: float = Field(ge=1, le=10)
+
+class BatchSkillsByCategory(BaseModel):
+    hard_skills: List[SkillWithRating] = []
+    soft_skills: List[SkillWithRating] = []
+    technical_skills: List[SkillWithRating] = []
+
+# Schema for individual skill creation with category
+class SingleSkillCreate(BaseModel):
+    name: str
+    rating: float = Field(ge=1, le=10)
+    category: SkillCategory

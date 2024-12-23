@@ -4,7 +4,7 @@ from app.core.config import API_TITLE, API_DESCRIPTION, VERSION, API_V1_STR, BAC
 from app.core.database import engine, SessionLocal
 from app.models import Base
 from app.api.v1 import api_router
-from app.core.init_db import init_predefined_templates
+from app.core.init_db import init_db
 import logging
 
 # Set up logging
@@ -43,10 +43,10 @@ async def startup_event():
     """Initialize application on startup"""
     try:
         db = SessionLocal()
-        await init_predefined_templates(db)
-        logger.info("Successfully initialized predefined templates")
+        await init_db(db)  # This will call both template and skills initialization
+        logger.info("Successfully initialized database")
     except Exception as e:
-        logger.error(f"Error initializing predefined templates: {str(e)}")
+        logger.error(f"Error initializing database: {str(e)}")
     finally:
         db.close()
 

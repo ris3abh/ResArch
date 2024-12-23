@@ -70,6 +70,26 @@ interface PredefinedTemplate {
   content: string;
 }
 
+//Skills Interface
+// Skills Interface
+interface Skill {
+  id: string;
+  name: string;
+  category?: string;
+  description?: string;
+}
+
+interface UserSkill {
+  skill_id: string;
+  proficiency_level: number;
+  user_id: string;
+}
+
+interface ExtractedSkills {
+  skills: Skill[];
+  confidence_scores: Record<string, number>;
+}
+
 // Custom type for headers
 type Headers = Record<string, string>;
 
@@ -111,6 +131,7 @@ export class Api {
 
   private constructor() {
     this.baseUrl = API_CONFIG.BASE_URL;
+    console.log('API Service initialized with base URL:', this.baseUrl);
   }
 
   public static getInstance(): Api {
@@ -165,23 +186,6 @@ export class Api {
     });
 
     return handleResponse(response);
-  }
-
-  // =======================
-  // Skills APIs
-  // =======================
-  async getUserSkills(): Promise<ApiResponse<any>> {
-    return handleResponse(await fetch(`${this.baseUrl}/skills/my-skills`, {
-      headers: getAuthHeader(),
-    }));
-  }
-
-  async addSkill(skillData: any): Promise<ApiResponse<any>> {
-    return handleResponse(await fetch(`${this.baseUrl}/skills/`, {
-      method: 'POST',
-      headers: getAuthHeader(),
-      body: JSON.stringify(skillData),
-    }));
   }
 
   // =======================
@@ -298,6 +302,79 @@ export class Api {
     return handleResponse(await fetch(`${this.baseUrl}/templates/predefined`, {
       headers: getAuthHeader(),
     }));
+  }
+
+  // =======================
+  // Skills APIs
+  // =======================
+  /**
+   * Search for skills in the database
+   * @param query Search query string
+   */
+  async searchSkills(query: string): Promise<ApiResponse<Skill[]>> {
+    console.log('Searching skills with query:', query);
+    try {
+      const response = await fetch(`${this.baseUrl}/skills/skills?query=${encodeURIComponent(query)}`, {
+        headers: getAuthHeader(),
+      });
+      const result = await handleResponse<Skill[]>(response);
+      console.log('Search skills result:', result);
+      return result;
+    } catch (error) {
+      console.error('Error searching skills:', error);
+      return {
+        error: 'Failed to search skills',
+        status: 500,
+      };
+    }
+  }
+
+  /**
+   * Extract skills from resume content
+   * @param content Resume content or file
+   */
+  async extractSkills(content: string): Promise<ApiResponse<ExtractedSkills>> {
+    console.log('Extracting skills from resume content');
+    try {
+      const response = await fetch(`${this.baseUrl}/skills/skills/extract`, {
+        method: 'POST',
+        headers: getAuthHeader(),
+        body: JSON.stringify({ content }),
+      });
+      const result = await handleResponse<ExtractedSkills>(response);
+      console.log('Extracted skills:', result);
+      return result;
+    } catch (error) {
+      console.error('Error extracting skills:', error);
+      return {
+        error: 'Failed to extract skills',
+        status: 500,
+      };
+    }
+  }
+
+  /**
+   * Add a skill to user's profile
+   * @param skillData User skill data including skill_id and proficiency_level
+   */
+  async addUserSkill(skillData: UserSkill): Promise<ApiResponse<any>> {
+    console.log('Adding user skill:', skillData);
+    try {
+      const response = await fetch(`${this.baseUrl}/skills/user-skills`, {
+        method: 'POST',
+        headers: getAuthHeader(),
+        body: JSON.stringify(skillData),
+      });
+      const result = await handleResponse(response);
+      console.log('Add user skill result:', result);
+      return result;
+    } catch (error) {
+      console.error('Error adding user skill:', error);
+      return {
+        error: 'Failed to add user skill',
+        status: 500,
+      };
+    }
   }
 
 

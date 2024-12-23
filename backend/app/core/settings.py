@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     # External APIs
     OPENAI_API_KEY: str
     GITHUB_TOKEN: str
+    GROQ_API_KEY: str
 
     # Cloudinary
     cloudinary_cloud_name: str

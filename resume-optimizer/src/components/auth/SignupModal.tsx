@@ -1,131 +1,187 @@
+// src/components/auth/SignupModal.tsx
 import {
     Dialog,
     DialogTitle,
     DialogContent,
-    Box,
+    DialogActions,
+    TextField,
     Button,
+    Box,
+    useTheme,
+    Alert,
     Typography,
-    useTheme
+    Link
 } from '@mui/material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { api } from '../../services/api';
+import { WelcomeModal } from './WelcomeModal';
 
-interface WelcomeModalProps {
+interface SignupModalProps {
     open: boolean;
     onClose: () => void;
+    onSuccess: () => void;
+    onSwitchToLogin: () => void;  // New prop for switching to login
 }
 
-export const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
+export const SignupModal = ({ open, onClose, onSuccess, onSwitchToLogin }: SignupModalProps) => {
     const theme = useTheme();
     const navigate = useNavigate();
+    const [formData, setFormData] = useState({
+        email: '',
+        password: '',
+        full_name: '',
+        github_username: '',
+    });
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
-    const handleTemplateChoice = (hasTemplate: boolean) => {
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError(null);
         setLoading(true);
-        onClose(); // Close the modal first
         
-        // Use setTimeout to ensure modal is closed before navigation
-        setTimeout(() => {
-            if (hasTemplate) {
-                navigate('/dashboard');
+        try {
+            const response = await api.register(formData);
+            if (response.data) {
+                const loginResponse = await api.login({
+                    username: formData.email,
+                    password: formData.password
+                });
+
+                if (loginResponse.data && loginResponse.data.access_token) {
+                    localStorage.setItem('token', loginResponse.data.access_token);
+                    onSuccess();
+                    onClose();
+                    setShowWelcomeModal(true); // Just show welcome modal
+                } else {
+                    setError('Registration successful but login failed. Please try logging in.');
+                }
             } else {
-                navigate('/templates');
+                setError(response.error || 'Registration failed. Please try again.');
             }
+        } catch (error) {
+            setError('Registration failed. Please check your information and try again.');
+            console.error('Signup failed:', error);
+        } finally {
             setLoading(false);
-        }, 100);
+        }
     };
 
     return (
-        <Dialog 
-            open={open} 
-            onClose={onClose} 
-            maxWidth="sm" 
-            fullWidth
-            PaperProps={{
-                sx: {
-                    borderRadius: 2,
-                    p: 2
-                }
-            }}
-        >
+        <>
+            <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
             <DialogTitle sx={{ 
                 color: theme.palette.deepPurple.main,
                 textAlign: 'center',
-                fontWeight: 'bold',
-                fontSize: '1.75rem'
+                fontWeight: 'bold'
             }}>
-                Welcome to ResumeAI!
+                Create Your Account
             </DialogTitle>
-            <DialogContent>
-                <Box sx={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    gap: 4,
-                    py: 3
-                }}>
-                    <Typography variant="h6" align="center" sx={{ mb: 2 }}>
-                        Do you have a LaTeX Resume Template ready to use?
-                    </Typography>
-
-                    {/* Template Options */}
-                    <Box sx={{ 
-                        display: 'flex', 
-                        justifyContent: 'center',
-                        gap: 3
-                    }}>
-                        {/* Yes Button */}
-                        <Button
-                            variant="outlined"
+            <form onSubmit={handleSubmit}>
+                <DialogContent>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {error && (
+                            <Alert severity="error" sx={{ mb: 2 }}>
+                                {error}
+                            </Alert>
+                        )}
+                        <TextField
+                            label="Email"
+                            type="email"
+                            fullWidth
+                            value={formData.email}
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            required
                             disabled={loading}
-                            onClick={() => handleTemplateChoice(true)}
-                            sx={{
-                                borderColor: theme.palette.deepPurple.main,
-                                color: theme.palette.deepPurple.main,
-                                px: 4,
-                                py: 1.5,
-                                '&:hover': {
-                                    borderColor: theme.palette.navy.main,
-                                    color: theme.palette.navy.main,
-                                    backgroundColor: 'rgba(0, 0, 0, 0.04)'
-                                }
-                            }}
-                        >
-                            Yes, I have one
-                        </Button>
-
-                        {/* No Button - First one's on us */}
-                        <Button
-                            variant="contained"
+                            autoFocus
+                            autoComplete="email"
+                        />
+                        <TextField
+                            label="Password"
+                            type="password"
+                            fullWidth
+                            value={formData.password}
+                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                            required
                             disabled={loading}
-                            onClick={() => handleTemplateChoice(false)}
-                            sx={{
-                                backgroundColor: theme.palette.deepPurple.main,
-                                color: 'white',
-                                px: 4,
-                                py: 1.5,
-                                boxShadow: '0 4px 14px 0 rgba(94, 53, 177, 0.3)',
-                                '&:hover': {
-                                    backgroundColor: theme.palette.navy.main,
-                                    transform: 'translateY(-1px)',
-                                    boxShadow: '0 6px 20px 0 rgba(94, 53, 177, 0.4)'
-                                },
-                                transition: 'all 0.2s ease-in-out'
-                            }}
-                        >
-                            First one's on us!
-                        </Button>
+                            autoComplete="new-password"
+                            helperText="Minimum 8 characters"
+                        />
+                        <TextField
+                            label="Full Name"
+                            fullWidth
+                            value={formData.full_name}
+                            onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                            disabled={loading}
+                            autoComplete="name"
+                        />
+                        <TextField
+                            label="GitHub Username (Optional)"
+                            fullWidth
+                            value={formData.github_username}
+                            onChange={(e) => setFormData({ ...formData, github_username: e.target.value })}
+                            disabled={loading}
+                        />
+                        <Box sx={{ mt: 2, textAlign: 'center' }}>
+                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                                Already have an account?{' '}
+                                <Link
+                                    component="button"
+                                    type="button"
+                                    variant="body2"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        onClose();
+                                        onSwitchToLogin();
+                                    }}
+                                    sx={{
+                                        color: theme.palette.deepPurple.main,
+                                        textDecoration: 'none',
+                                        '&:hover': {
+                                            textDecoration: 'underline',
+                                            color: theme.palette.navy.main,
+                                        },
+                                    }}
+                                >
+                                    Login here
+                                </Link>
+                            </Typography>
+                        </Box>
                     </Box>
-
-                    <Typography 
-                        variant="body2" 
-                        align="center" 
-                        color="text.secondary"
-                        sx={{ mt: 2 }}
+                </DialogContent>
+                <DialogActions sx={{ p: 3 }}>
+                    <Button 
+                        onClick={onClose} 
+                        variant="outlined"
+                        disabled={loading}
                     >
-                        Choose a template that best suits your needs or upload your own
-                    </Typography>
-                </Box>
-            </DialogContent>
+                        Cancel
+                    </Button>
+                    <Button 
+                        type="submit"
+                        variant="contained"
+                        disabled={loading}
+                        sx={{
+                            backgroundColor: theme.palette.deepPurple.main,
+                            '&:hover': {
+                                backgroundColor: theme.palette.navy.main,
+                            }
+                        }}
+                    >
+                        {loading ? 'Creating Account...' : 'Sign Up'}
+                    </Button>
+                </DialogActions>
+            </form>
         </Dialog>
+        {showWelcomeModal && (
+                <WelcomeModal 
+                    open={showWelcomeModal}
+                    onClose={() => setShowWelcomeModal(false)}
+                />
+            )}
+        </>
+        
     );
 };
