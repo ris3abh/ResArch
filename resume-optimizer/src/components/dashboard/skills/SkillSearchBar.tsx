@@ -1,4 +1,3 @@
-// SkillSearchBar.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Box, 
@@ -12,22 +11,20 @@ import {
   CircularProgress,
   Popper,
   ClickAwayListener,
-  Typography
+  Typography,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from '@mui/material';
 import { Search, Add } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../../../services/api';
 import debounce from 'lodash/debounce';
+import type { SkillCategory, Skill } from '../../../services/api';
 
 interface SkillSearchBarProps {
-  onAddSkill: (tabIndex: number, skill: string, rating: number) => void;
-}
-
-interface Skill {
-  id: string;
-  name: string;
-  category?: string;
-  description?: string;
+  onAddSkill: (category: SkillCategory, skillName: string, rating: number) => void;
 }
 
 const getColorForRating = (rating: number): string => {
@@ -35,18 +32,6 @@ const getColorForRating = (rating: number): string => {
   if (rating <= 5) return '#FFB649';
   if (rating <= 7) return '#FFE449';
   return '#85FF85';
-};
-
-const getCategoryIndex = (category?: string): number => {
-  if (!category) return 0; // default to Technical Skills if no category
-  
-  const lowerCategory = category.toLowerCase();
-  if (lowerCategory.includes('soft') || lowerCategory.includes('interpersonal')) {
-    return 1; // Soft Skills
-  } else if (lowerCategory.includes('hard') || lowerCategory.includes('domain')) {
-    return 2; // Hard Skills
-  }
-  return 0; // Technical Skills by default
 };
 
 const SkillSearchBar: React.FC<SkillSearchBarProps> = ({ onAddSkill }) => {
@@ -58,6 +43,7 @@ const SkillSearchBar: React.FC<SkillSearchBarProps> = ({ onAddSkill }) => {
   const [error, setError] = useState<string | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<SkillCategory>('technical');
 
   const debouncedSearch = useCallback(
     debounce(async (query: string) => {
@@ -70,10 +56,7 @@ const SkillSearchBar: React.FC<SkillSearchBarProps> = ({ onAddSkill }) => {
       setError(null);
 
       try {
-        console.log('Searching for:', query);
         const response = await api.searchSkills(query);
-        console.log('Search response:', response);
-        
         if (response.error) {
           throw new Error(response.error);
         }
@@ -108,6 +91,7 @@ const SkillSearchBar: React.FC<SkillSearchBarProps> = ({ onAddSkill }) => {
   const handleSkillSelect = (skill: Skill) => {
     setSearchTerm(skill.name);
     setSelectedSkill(skill);
+    setSelectedCategory(skill.category);
     setSearchResults([]);
     setIsExpanded(true);
   };
@@ -116,38 +100,20 @@ const SkillSearchBar: React.FC<SkillSearchBarProps> = ({ onAddSkill }) => {
     if (!searchTerm.trim()) return;
 
     try {
-      const skillToAdd = selectedSkill || {
-        id: 'custom',
-        name: searchTerm.trim(),
-        category: 'technical'
-      };
-
-      console.log('Adding skill:', skillToAdd);
-
-      if (skillToAdd.id !== 'custom') {
-        await api.addUserSkill({
-          skill_id: skillToAdd.id,
-          proficiency_level: rating,
-          user_id: 'current'
-        });
-      }
-
-      const tabIndex = getCategoryIndex(skillToAdd.category);
-      
-      onAddSkill(tabIndex, skillToAdd.name, rating);
+      onAddSkill(selectedCategory, searchTerm.trim(), rating);
       setSearchTerm('');
       setRating(5);
       setIsExpanded(false);
       setSelectedSkill(null);
       setSearchResults([]);
+      setSelectedCategory('technical'); // Reset to default category
     } catch (err) {
-      console.error('Error adding skill:', err);
       setError('Failed to add skill');
     }
   };
 
   return (
-    <Box sx={{ width: '100%', maxWidth: '800px', position: 'relative' }}>
+    <Box sx={{ width: '100%', maxWidth: '1000px', position: 'relative' }}>
       <Paper elevation={2} sx={{ p: 2 }}>
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
           <TextField
@@ -203,7 +169,7 @@ const SkillSearchBar: React.FC<SkillSearchBarProps> = ({ onAddSkill }) => {
                   >
                     <ListItemText 
                       primary={skill.name}
-                      secondary={skill.category}
+                      secondary={`Category: ${skill.category}`}
                     />
                   </ListItemButton>
                 ))}
@@ -221,6 +187,19 @@ const SkillSearchBar: React.FC<SkillSearchBarProps> = ({ onAddSkill }) => {
               transition={{ duration: 0.2 }}
             >
               <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Category</InputLabel>
+                  <Select
+                    value={selectedCategory}
+                    label="Category"
+                    onChange={(e) => setSelectedCategory(e.target.value as SkillCategory)}
+                  >
+                    <MenuItem value="technical">Technical Skills</MenuItem>
+                    <MenuItem value="soft">Soft Skills</MenuItem>
+                    <MenuItem value="hard">Hard Skills</MenuItem>
+                  </Select>
+                </FormControl>
+
                 <Box sx={{ px: 1 }}>
                   <Typography variant="caption" color="textSecondary" sx={{ mb: 1 }}>
                     Set your proficiency level

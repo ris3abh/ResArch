@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
-import { Box, Button, Card, Typography, IconButton, CircularProgress, Alert } from '@mui/material';
+import { Box, Button, Card, Typography, CircularProgress, Alert } from '@mui/material';
 import { CloudUpload, Close, Save } from '@mui/icons-material';
 import { api } from '../../services/api';
 import { getAuthToken } from '../../utils/auth';
 import { Link } from 'react-router-dom';
+import type { Skill } from '../../services/api';
 
-const ResumeSection: React.FC = () => {
+interface ResumeSectionProps {
+  onSkillsExtracted: (skills: Skill[]) => void;
+}
+
+const ResumeSection: React.FC<ResumeSectionProps> = ({ onSkillsExtracted }) => {
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,14 +22,13 @@ const ResumeSection: React.FC = () => {
     if (!file) return;
 
     const token = getAuthToken();
-
     if (!token) {
       setError('Please log in to upload files.');
       return;
     }
 
-    if (!file.name.endsWith('.tex')) {
-      setError('Invalid file type. Please upload a .tex file.');
+    if (!file.name.endsWith('.tex') && !file.name.endsWith('.pdf')) {
+      setError('Invalid file type. Please upload a PDF or .tex file.');
       return;
     }
 
@@ -32,6 +36,7 @@ const ResumeSection: React.FC = () => {
       setUploading(true);
       setError(null);
 
+      // Upload template and get PDF preview
       const uploadResponse = await api.uploadTemplate(file);
       if (uploadResponse.error) {
         throw new Error(uploadResponse.error);
@@ -47,8 +52,18 @@ const ResumeSection: React.FC = () => {
           throw new Error('Failed to generate PDF preview');
         }
       }
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'An unexpected error occurred');
+
+      // Extract skills and pass them up to parent
+      const skillExtractRes = await api.extractSkillsFromFile(file);
+      if (skillExtractRes.error) throw new Error(skillExtractRes.error);
+      
+      if (skillExtractRes.data) {
+        console.log("Extracted skills:", skillExtractRes.data);
+        onSkillsExtracted(skillExtractRes.data);
+      }
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
       setUploading(false);
     }
@@ -282,6 +297,10 @@ const ResumeSection: React.FC = () => {
             >
               Choose a Template
             </Button>
+          </Box>
+          <Box>
+            {/* ... after you’ve successfully extracted skills into resumeSkills... */}
+            < Typography></Typography>
           </Box>
     </Box>
   );

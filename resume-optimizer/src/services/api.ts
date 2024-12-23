@@ -1,5 +1,3 @@
-// frontend/src/services/api.ts
-
 import { getAuthToken } from '../utils/auth';
 
 const API_CONFIG = {
@@ -8,35 +6,70 @@ const API_CONFIG = {
     'Content-Type': 'application/json',
   },
 };
-  
+
 // Interface for API Response
-interface ApiResponse<T = any> {
+export interface ApiResponse<T = any> {
   data?: T;
   error?: string;
   status: number;
 }
 
 // Authentication Interfaces
-interface LoginData {
+export interface LoginData {
   username: string;
   password: string;
 }
 
-interface LoginResponse {
+export interface LoginResponse {
   access_token: string;
   token_type: string;
 }
 
-interface RegisterData {
+export interface RegisterData {
   email: string;
   password: string;
   full_name?: string;
   github_username?: string;
 }
 
+// Skills Interfaces
+export type SkillCategory = 'soft' | 'technical' | 'hard';
+
+export interface Skill {
+  id: number;
+  name: string;
+  category: SkillCategory;
+  source?: string;
+}
+
+export interface UserSkill {
+  id: number;
+  skill_id: number;
+  rating: number;
+  skill: Skill;
+}
+
+export interface SkillWithRating {
+  name: string;
+  rating: number;
+  isFromResume?: boolean; 
+}
+
+export interface BatchSkillsByCategory {
+  hard_skills: SkillWithRating[];
+  soft_skills: SkillWithRating[];
+  technical_skills: SkillWithRating[];
+}
+
+export interface SingleSkillCreate {
+  name: string;
+  rating: number;
+  category: SkillCategory;
+}
+
 // Template Interfaces
-interface Template {
-  id: string; // UUID
+export interface Template {
+  id: string;
   name: string;
   description: string;
   content: string;
@@ -49,20 +82,20 @@ interface Template {
   updated_at: string;
 }
 
-interface UploadFileResponse {
+export interface UploadFileResponse {
   message: string;
 }
 
-interface FinalizedResourcesResponse {
+export interface FinalizedResourcesResponse {
   tex_url: string;
   pdf_url: string;
 }
 
-interface CompileLatexRequest {
+export interface CompileLatexRequest {
   content: string;
 }
 
-interface PredefinedTemplate {
+export interface PredefinedTemplate {
   id: string;
   name: string;
   description: string;
@@ -70,38 +103,11 @@ interface PredefinedTemplate {
   content: string;
 }
 
-//Skills Interface
-// Skills Interface
-interface Skill {
-  id: string;
-  name: string;
-  category?: string;
-  description?: string;
-}
-
-interface UserSkill {
-  skill_id: string;
-  proficiency_level: number;
-  user_id: string;
-}
-
-interface ExtractedSkills {
-  skills: Skill[];
-  confidence_scores: Record<string, number>;
-}
-
-// Custom type for headers
 type Headers = Record<string, string>;
 
 // API Helper Functions
 const getAuthHeader = () => {
   const token = getAuthToken();
-  console.log('Current auth token:', token); // Add this to debug
-
-  if (!token) {
-    console.warn('No auth token found!');
-  }
-
   return {
     'Content-Type': 'application/json',
     'Authorization': token ? `Bearer ${token}` : '',
@@ -131,7 +137,6 @@ export class Api {
 
   private constructor() {
     this.baseUrl = API_CONFIG.BASE_URL;
-    console.log('API Service initialized with base URL:', this.baseUrl);
   }
 
   public static getInstance(): Api {
@@ -141,9 +146,7 @@ export class Api {
     return Api.instance;
   }
 
-  // =======================
   // Authentication APIs
-  // =======================
   async login(data: LoginData): Promise<ApiResponse<LoginResponse>> {
     const formData = new URLSearchParams();
     formData.append('username', data.username);
@@ -159,14 +162,12 @@ export class Api {
   
     const result = await handleResponse<LoginResponse>(response);
     
-    // Now TypeScript knows that result.data might have access_token
     if (result.data && result.data.access_token) {
       localStorage.setItem('auth_token', result.data.access_token);
     }
   
     return result;
   }
-  
 
   async register(data: RegisterData): Promise<ApiResponse<any>> {
     return handleResponse(await fetch(`${this.baseUrl}/auth/register`, {
@@ -176,36 +177,22 @@ export class Api {
     }));
   }
 
-  // =======================
   // User APIs
-  // =======================
   async getCurrentUser(): Promise<ApiResponse<any>> {
-    const headers = getAuthHeader();
-    const response = await fetch(`${this.baseUrl}/users/me`, {
-      headers,
-    });
-
-    return handleResponse(response);
+    return handleResponse(await fetch(`${this.baseUrl}/users/me`, {
+      headers: getAuthHeader(),
+    }));
   }
 
-  // =======================
   // Template APIs
-  // =======================
-
-  /**
-   * Upload a LaTeX template
-   */
   async uploadTemplate(file: File): Promise<ApiResponse<Template>> {
     const formData = new FormData();
     formData.append('file', file);
-  
-    const token = getAuthToken();
+    
     const headers: HeadersInit = {
-      'Authorization': token ? `Bearer ${token}` : ''
+      'Authorization': getAuthToken() ? `Bearer ${getAuthToken()}` : ''
     };
-  
-    console.log('Upload headers:', headers);
-  
+    
     return handleResponse(await fetch(`${this.baseUrl}/templates/upload`, {
       method: 'POST',
       headers: headers,
@@ -213,18 +200,12 @@ export class Api {
     }));
   }
 
-  /**
-   * Get the current user's template
-   */
   async getUserTemplate(): Promise<ApiResponse<Template>> {
     return handleResponse(await fetch(`${this.baseUrl}/templates/my-template`, {
       headers: getAuthHeader(),
     }));
   }
 
-  /**
-   * Preview a PDF for the user's template
-   */
   async previewTemplate(uniqueId: string): Promise<ApiResponse<Blob>> {
     const response = await fetch(`${this.baseUrl}/templates/preview?unique_id=${uniqueId}`, {
       headers: getAuthHeader(),
@@ -244,9 +225,6 @@ export class Api {
     };
   }
 
-  /**
-   * Finalize the user's template by uploading to Cloudinary
-   */
   async finalizeTemplate(): Promise<ApiResponse<Template>> {
     return handleResponse(await fetch(`${this.baseUrl}/templates/finalize`, {
       method: 'POST',
@@ -254,9 +232,6 @@ export class Api {
     }));
   }
 
-  /**
-   * Delete the user's template (also deletes from Cloudinary)
-   */
   async deleteTemplate(templateId: string): Promise<ApiResponse<UploadFileResponse>> {
     return handleResponse(await fetch(`${this.baseUrl}/templates/${templateId}`, {
       method: 'DELETE',
@@ -264,23 +239,16 @@ export class Api {
     }));
   }
 
-  /**
-   * Get the finalized PDF and TEX URLs
-   */
   async getFinalizedResources(): Promise<ApiResponse<FinalizedResourcesResponse>> {
     return handleResponse(await fetch(`${this.baseUrl}/templates/finalized-resources`, {
       headers: getAuthHeader(),
     }));
   }
 
-
   async compileLaTeX(data: CompileLatexRequest): Promise<ApiResponse<Blob>> {
     const response = await fetch(`${this.baseUrl}/resumes/compile`, {
       method: 'POST',
-      headers: {
-        ...getAuthHeader(),
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeader(),
       body: JSON.stringify(data),
     });
   
@@ -297,31 +265,22 @@ export class Api {
       status: response.status,
     };
   }
-  
+
   async getPredefinedTemplates(): Promise<ApiResponse<PredefinedTemplate[]>> {
     return handleResponse(await fetch(`${this.baseUrl}/templates/predefined`, {
       headers: getAuthHeader(),
     }));
   }
 
-  // =======================
-  // Skills APIs
-  // =======================
-  /**
-   * Search for skills in the database
-   * @param query Search query string
-   */
+  // Updated Skills APIs
   async searchSkills(query: string): Promise<ApiResponse<Skill[]>> {
-    console.log('Searching skills with query:', query);
     try {
-      const response = await fetch(`${this.baseUrl}/skills/skills?query=${encodeURIComponent(query)}`, {
-        headers: getAuthHeader(),
-      });
-      const result = await handleResponse<Skill[]>(response);
-      console.log('Search skills result:', result);
-      return result;
+      const response = await fetch(
+        `${this.baseUrl}/skills/skills?query=${encodeURIComponent(query)}`,
+        { headers: getAuthHeader() }
+      );
+      return handleResponse<Skill[]>(response);
     } catch (error) {
-      console.error('Error searching skills:', error);
       return {
         error: 'Failed to search skills',
         status: 500,
@@ -329,23 +288,26 @@ export class Api {
     }
   }
 
-  /**
-   * Extract skills from resume content
-   * @param content Resume content or file
-   */
-  async extractSkills(content: string): Promise<ApiResponse<ExtractedSkills>> {
-    console.log('Extracting skills from resume content');
+  async extractSkillsFromFile(file: File): Promise<ApiResponse<Skill[]>> {
     try {
+      const token = getAuthToken();
+      const formData = new FormData();
+      formData.append('file', file, file.name);
+  
+      // Build our own headers. We do NOT set 'Content-Type'
+      const headers: HeadersInit = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+  
       const response = await fetch(`${this.baseUrl}/skills/skills/extract`, {
         method: 'POST',
-        headers: getAuthHeader(),
-        body: JSON.stringify({ content }),
+        headers,
+        body: formData,
       });
-      const result = await handleResponse<ExtractedSkills>(response);
-      console.log('Extracted skills:', result);
-      return result;
+  
+      return handleResponse<Skill[]>(response);
     } catch (error) {
-      console.error('Error extracting skills:', error);
       return {
         error: 'Failed to extract skills',
         status: 500,
@@ -353,34 +315,69 @@ export class Api {
     }
   }
 
-  /**
-   * Add a skill to user's profile
-   * @param skillData User skill data including skill_id and proficiency_level
-   */
-  async addUserSkill(skillData: UserSkill): Promise<ApiResponse<any>> {
-    console.log('Adding user skill:', skillData);
+  async extractSkills(resumeContent: string): Promise<ApiResponse<Skill[]>> {
     try {
-      const response = await fetch(`${this.baseUrl}/skills/user-skills`, {
+      const response = await fetch(`${this.baseUrl}/skills/skills/extract`, {
         method: 'POST',
         headers: getAuthHeader(),
-        body: JSON.stringify(skillData),
+        body: JSON.stringify({ resume_content: resumeContent }),
       });
-      const result = await handleResponse(response);
-      console.log('Add user skill result:', result);
-      return result;
+      return handleResponse<Skill[]>(response);
     } catch (error) {
-      console.error('Error adding user skill:', error);
       return {
-        error: 'Failed to add user skill',
+        error: 'Failed to extract skills',
         status: 500,
       };
     }
   }
 
+  async getUserSkills(): Promise<ApiResponse<UserSkill[]>> {
+    try {
+      const response = await fetch(`${this.baseUrl}/skills/user-skills/me`, {
+        headers: getAuthHeader(),
+      });
+      return handleResponse<UserSkill[]>(response);
+    } catch (error) {
+      return {
+        error: 'Failed to get user skills',
+        status: 500,
+      };
+    }
+  }
 
-  // =======================
+  async addSingleUserSkill(skillData: SingleSkillCreate): Promise<ApiResponse<UserSkill>> {
+    try {
+      const response = await fetch(`${this.baseUrl}/skills/user-skills/single`, {
+        method: 'POST',
+        headers: getAuthHeader(),
+        body: JSON.stringify(skillData),
+      });
+      return handleResponse<UserSkill>(response);
+    } catch (error) {
+      return {
+        error: 'Failed to add skill',
+        status: 500,
+      };
+    }
+  }
+  
+  async saveBatchSkills(skills: BatchSkillsByCategory): Promise<ApiResponse<UserSkill[]>> {
+    try {
+      const response = await fetch(`${this.baseUrl}/skills/user-skills/batch`, {
+        method: 'POST',
+        headers: getAuthHeader(),
+        body: JSON.stringify(skills),
+      });
+      return handleResponse<UserSkill[]>(response);
+    } catch (error) {
+      return {
+        error: 'Failed to save skills batch',
+        status: 500,
+      };
+    }
+  }
+
   // Generic Request Method
-  // =======================
   async request<T>(
     endpoint: string,
     options: RequestInit = {}

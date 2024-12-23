@@ -7,13 +7,14 @@ import ErrorScreen from '../components/common/ErrorAlert';
 import ResumeSection from '../components/dashboard/ResumeSection';
 import SkillsSection from '../components/dashboard/SkillsSection';
 import { Box, Typography, useTheme } from '@mui/material';
+import type { Skill } from '../services/api';
 
 const Dashboard: React.FC = () => {
   const theme = useTheme();
-  const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const [extractedSkills, setExtractedSkills] = useState<Skill[]>([]);
 
   const fetchUserData = async () => {
     try {
@@ -27,9 +28,7 @@ const Dashboard: React.FC = () => {
         return;
       }
 
-      if (response.data) {
-        setUserData(response.data);
-      } else {
+      if (!response.data) {
         setError('Failed to fetch user data.');
       }
     } catch (err) {
@@ -45,12 +44,6 @@ const Dashboard: React.FC = () => {
 
   if (loading) return <LoadingScreen />;
   if (error) return <ErrorScreen message={error} onRetry={fetchUserData} />;
-
-  const myTabs = [
-    { title: 'Hard Skills', content: 'Skills like project management, data analysis, and problem-solving.' },
-    { title: 'Soft Skills', content: 'Skills like communication, teamwork, leadership, and adaptability.' },
-    { title: 'Technical Skills', content: 'Skills like Python, JavaScript, TensorFlow, and SQL.' },
-  ];  
 
   return (
     <Box
@@ -86,7 +79,7 @@ const Dashboard: React.FC = () => {
           display: 'flex',
           flex: 1,
           flexDirection: { xs: 'column', md: 'row' },
-          overflow: 'auto', // Changed from 'hidden' to 'auto'
+          overflow: 'auto',
         }}
       >
         {/* Left Section: Resume */}
@@ -95,11 +88,15 @@ const Dashboard: React.FC = () => {
             flex: { xs: 1, md: 4 },
             bgcolor: theme.palette.background.paper,
             p: 3,
-            overflow: 'auto', // Added overflow
-            // Removed alignItems and justifyContent
+            overflow: 'auto',
           }}
         >
-          <ResumeSection />
+          <ResumeSection 
+            onSkillsExtracted={(skills) => {
+              console.log('Skills extracted:', skills);
+              setExtractedSkills(skills);
+            }} 
+          />
         </Box>
 
         {/* Right Section: Skills */}
@@ -108,12 +105,11 @@ const Dashboard: React.FC = () => {
             flex: { xs: 1, md: 6 },
             bgcolor: theme.palette.background.paper,
             p: 3,
-            overflow: 'auto', // Added overflow
-            // Removed alignItems and justifyContent
+            overflow: 'auto',
           }}
         >
           <Box sx={{ width: '100%' }}>
-            <SkillsSection />
+            <SkillsSection importedResumeSkills={extractedSkills} />
           </Box>
         </Box>
       </Box>

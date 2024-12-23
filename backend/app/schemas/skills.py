@@ -24,7 +24,7 @@ class Skill(SkillBase):
 
 class UserSkillBase(BaseModel):
     skill_id: int
-    rating: float = Field(ge=0, le=5)  # Rating between 0 and 5
+    rating: float = Field(ge=0, le=10)  # Rating between 0 and 5
 
 class UserSkillCreate(UserSkillBase):
     pass

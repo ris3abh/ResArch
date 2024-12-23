@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+// src/components/skills/SkillChip.tsx
+import React, { useState } from 'react';
 import { 
   Box, 
   Chip, 
@@ -6,120 +7,72 @@ import {
   Slider, 
   IconButton,
   CircularProgress,
-  List,
-  ListItemButton,
-  ListItemText,
   Paper,
-  Popper,
-  ClickAwayListener
+  Typography,
+  Menu,
+  MenuItem
 } from '@mui/material';
-import { Add, Check, Edit, Close } from '@mui/icons-material';
+import { Check, Edit, Close, MoreVert, Delete } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import { api } from '../../../services/api';
-import debounce from 'lodash/debounce';
+import type { SkillCategory } from '../../../services/api';
 
 interface SkillChipProps {
-  isNew?: boolean;
-  initialSkill?: string;
+  initialSkill: string;
   initialRating?: number;
-  skillId?: string;
-  onAdd: (skill: string, rating: number) => void;
-  onEdit?: (oldSkill: string, newSkill: string, newRating: number) => void;
+  category: SkillCategory;
+  isFromResume?: boolean;
+  onEdit: (oldSkill: string, newSkill: string, newRating: number) => void;
+  onDelete: (skillName: string) => void;
 }
 
-interface Skill {
-  id: string;
-  name: string;
-  category?: string;
-  description?: string;
-}
-
-const getColorForRating = (rating: number): string => {
-  if (rating <= 3) return '#FF8585';
+// This function determines the background color
+const getColorForRating = (rating: number | undefined, isFromResume: boolean): string => {
+  // If it's from resume and has no rating yet, show grey
+  if (isFromResume && (!rating || rating === 0)) {
+    return '#E0E0E0';
+  }
+  if (!rating || rating <= 3) return '#FF8585';
   if (rating <= 5) return '#FFB649';
   if (rating <= 7) return '#FFE449';
   return '#85FF85';
 };
 
 const SkillChip: React.FC<SkillChipProps> = ({ 
-  isNew = false, 
-  initialSkill = '', 
-  initialRating = 5,
-  skillId,
-  onAdd,
-  onEdit 
+  initialSkill, 
+  initialRating,
+  category,
+  isFromResume = false,
+  onEdit,
+  onDelete
 }) => {
-  const [isEditing, setIsEditing] = useState(isNew);
+  const [isEditing, setIsEditing] = useState(false);
   const [skill, setSkill] = useState(initialSkill);
-  const [rating, setRating] = useState(initialRating);
-  const [originalSkill] = useState(initialSkill);
+  // If isFromResume and rating is not provided, start them at 0 or 5. 
+  // We'll default to 5 here, but you could do 0 if you want them to pick a rating from scratch.
+  const [rating, setRating] = useState(initialRating !== undefined ? initialRating : 0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [searchResults, setSearchResults] = useState<Skill[]>([]);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-  // Debounced search function
-  const debouncedSearch = useCallback(
-    debounce(async (query: string) => {
-      if (!query.trim()) {
-        setSearchResults([]);
-        return;
-      }
-
-      setIsLoading(true);
-      try {
-        const response = await api.searchSkills(query);
-        console.log('Search response:', response);
-        if (response.error) {
-          throw new Error(response.error);
-        }
-        if (response.data) {
-          setSearchResults(response.data);
-        }
-      } catch (err) {
-        console.error('Search error:', err);
-        setError(err instanceof Error ? err.message : 'Failed to search skills');
-        setSearchResults([]);
-      } finally {
-        setIsLoading(false);
-      }
-    }, 300),
-    []
-  );
-
-  useEffect(() => {
-    if (isEditing && skill) {
-      debouncedSearch(skill);
-    } else {
-      setSearchResults([]);
-    }
-  }, [skill, isEditing, debouncedSearch]);
-
-  const handleSubmit = async (e?: React.FormEvent, selectedSkill?: Skill) => {
-    e?.preventDefault();
+  const handleSubmit = async () => {
     if (skill.trim()) {
       setIsLoading(true);
       setError(null);
 
       try {
-        const skillToUse = selectedSkill || { id: skillId || 'custom', name: skill.trim() };
-        
-        await api.addUserSkill({
-          skill_id: skillToUse.id,
-          proficiency_level: rating,
-          user_id: 'current'
+        // Call your API to add or update the skill
+        await api.addSingleUserSkill({
+          name: skill.trim(),
+          rating,
+          category
         });
 
-        if (isNew) {
-          onAdd(skillToUse.name, rating);
-          setSkill('');
-          setRating(5);
-        } else if (onEdit) {
-          onEdit(originalSkill, skillToUse.name, rating);
-          setIsEditing(false);
-        }
-        
-        setSearchResults([]);
+        // Let parent know
+        onEdit(initialSkill, skill.trim(), rating);
+        setIsEditing(false);
+
+        console.log('Skill Updated:', { name: skill.trim(), rating, category });
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to save skill');
       } finally {
@@ -128,14 +81,20 @@ const SkillChip: React.FC<SkillChipProps> = ({
     }
   };
 
-  const handleCancel = () => {
-    setSkill(initialSkill);
-    setRating(initialRating);
-    setIsEditing(false);
-    setError(null);
-    setSearchResults([]);
+  const handleDelete = () => {
+    setAnchorEl(null);
+    onDelete(initialSkill);
+    console.log('Skill Deleted:', { name: initialSkill, category });
   };
 
+  const handleCancel = () => {
+    setSkill(initialSkill);
+    setRating(initialRating || 0);
+    setIsEditing(false);
+    setError(null);
+  };
+
+  // If editing, show the rating slider & textfield
   if (isEditing) {
     return (
       <motion.div
@@ -143,105 +102,61 @@ const SkillChip: React.FC<SkillChipProps> = ({
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
       >
-        <Box
-          component="form"
-          onSubmit={handleSubmit}
+        <Paper
+          elevation={2}
           sx={{
             display: 'inline-flex',
             flexDirection: 'column',
             gap: 1,
             p: 2,
-            border: '1px solid #EAE6F5',
-            borderRadius: '16px',
-            bgcolor: 'white',
             minWidth: '250px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-            position: 'relative',
           }}
         >
           <TextField
             autoFocus
             size="small"
             value={skill}
-            onChange={(e) => {
-              setSkill(e.target.value);
-              setAnchorEl(e.currentTarget);
-            }}
-            placeholder="Search or enter skill..."
-            variant="outlined"
+            onChange={(e) => setSkill(e.target.value)}
+            placeholder="Enter skill name..."
             error={Boolean(error)}
             helperText={error}
-            InputProps={{
-              endAdornment: isLoading && <CircularProgress size={20} />,
-            }}
           />
 
-          {/* Search Results Popper */}
-          <Popper
-            open={Boolean(searchResults.length && anchorEl)}
-            anchorEl={anchorEl}
-            placement="bottom-start"
-            style={{ width: anchorEl?.clientWidth, zIndex: 1500 }}
-          >
-            <ClickAwayListener onClickAway={() => setSearchResults([])}>
-              <Paper elevation={3} sx={{ mt: 1, maxHeight: '200px', overflow: 'auto' }}>
-                <List>
-                  {searchResults.map((searchSkill) => (
-                    <ListItemButton
-                      key={searchSkill.id}
-                      onClick={() => {
-                        setSkill(searchSkill.name);
-                        handleSubmit(undefined, searchSkill);
-                        setSearchResults([]);
-                      }}
-                    >
-                      <ListItemText 
-                        primary={searchSkill.name}
-                        secondary={searchSkill.category}
-                      />
-                    </ListItemButton>
-                  ))}
-                </List>
-              </Paper>
-            </ClickAwayListener>
-          </Popper>
+          <Box sx={{ px: 1 }}>
+            <Typography variant="caption" color="textSecondary">
+              Proficiency Level
+            </Typography>
+            <Slider
+              size="small"
+              value={rating}
+              onChange={(_, value) => setRating(value as number)}
+              min={1}
+              max={10}
+              marks
+              valueLabelDisplay="auto"
+              sx={{
+                color: getColorForRating(rating, false),
+                '& .MuiSlider-rail': {
+                  background: 'linear-gradient(90deg, #FF8585 0%, #FFB649 30%, #FFE449 70%, #85FF85 100%)',
+                  opacity: 1,
+                },
+              }}
+            />
+          </Box>
 
-          <Slider
-            size="small"
-            value={rating}
-            onChange={(_, value) => setRating(value as number)}
-            min={1}
-            max={10}
-            marks
-            valueLabelDisplay="auto"
-            sx={{
-              color: getColorForRating(rating),
-              '& .MuiSlider-rail': {
-                background: 'linear-gradient(90deg, #FF8585 0%, #FFB649 30%, #FFE449 70%, #85FF85 100%)',
-                opacity: 1,
-              }
-            }}
-          />
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-            {!isNew && (
-              <IconButton 
-                size="small" 
-                onClick={handleCancel}
-                sx={{ color: 'grey.500' }}
-              >
-                <Close fontSize="small" />
-              </IconButton>
-            )}
             <IconButton 
               size="small" 
-              onClick={() => handleSubmit()}
+              onClick={handleCancel}
+              sx={{ color: 'grey.500' }}
+            >
+              <Close fontSize="small" />
+            </IconButton>
+            <IconButton 
+              size="small" 
+              onClick={handleSubmit}
               disabled={isLoading}
-              sx={{ 
-                color: 'primary.main',
-                '&:hover': {
-                  backgroundColor: 'rgba(103, 58, 183, 0.04)'
-                }
-              }}
+              sx={{ color: 'primary.main' }}
             >
               {isLoading ? (
                 <CircularProgress size={20} />
@@ -250,35 +165,71 @@ const SkillChip: React.FC<SkillChipProps> = ({
               )}
             </IconButton>
           </Box>
-        </Box>
+        </Paper>
       </motion.div>
     );
   }
 
+  // Otherwise, show a Chip with a context menu (for delete)
   return (
-    <Chip
-      label={skill}
-      onClick={() => setIsEditing(true)}
-      icon={isNew ? <Add /> : undefined}
-      deleteIcon={!isNew ? <Edit /> : undefined}
-      onDelete={!isNew ? () => setIsEditing(true) : undefined}
-      sx={{
-        bgcolor: isNew ? 'transparent' : getColorForRating(rating),
-        border: isNew ? '1px dashed #6B6B6B' : 'none',
-        borderRadius: '16px',
-        '&:hover': {
-          bgcolor: isNew ? 'rgba(0,0,0,0.04)' : getColorForRating(rating),
-          opacity: 0.9
-        },
-        '& .MuiChip-deleteIcon': {
-          opacity: 0,
-          transition: 'opacity 0.2s ease-in-out'
-        },
-        '&:hover .MuiChip-deleteIcon': {
-          opacity: 1
+    <>
+      <Chip
+        label={skill}
+        onClick={() => setIsEditing(true)}
+        deleteIcon={
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <IconButton 
+              size="small"
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                e.stopPropagation();
+                setIsEditing(true);
+              }}
+              sx={{ p: 0 }}
+            >
+              <Edit fontSize="small" sx={{ opacity: 0.7 }} />
+            </IconButton>
+            <IconButton
+              size="small"
+              onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                e.stopPropagation();
+                setAnchorEl(e.currentTarget);
+              }}
+              sx={{ p: 0 }}
+            >
+              <MoreVert fontSize="small" sx={{ opacity: 0.7 }} />
+            </IconButton>
+          </Box>
         }
-      }}
-    />
+        onDelete={() => {}}
+        sx={{
+          bgcolor: getColorForRating(rating, isFromResume),
+          borderRadius: '16px',
+          '&:hover': {
+            bgcolor: getColorForRating(rating, isFromResume),
+            opacity: 0.9
+          },
+          '& .MuiChip-deleteIcon': {
+            opacity: 0,
+            transition: 'opacity 0.2s ease-in-out',
+            mr: 0.5,
+          },
+          '&:hover .MuiChip-deleteIcon': {
+            opacity: 1
+          }
+        }}
+      />
+
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={() => setAnchorEl(null)}
+      >
+        <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
+          <Delete fontSize="small" sx={{ mr: 1 }} />
+          Delete Skill
+        </MenuItem>
+      </Menu>
+    </>
   );
 };
 

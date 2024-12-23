@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Query,Body
+from fastapi import APIRouter, Depends, HTTPException, Query, Body, File, UploadFile
+import shutil
+import tempfile
 from sqlalchemy.orm import Session
 from groq import Groq
 from typing import List, Optional
@@ -13,8 +15,8 @@ from app.schemas.skills import (
     SingleSkillCreate
 )
 from app.core.auth import get_current_active_user
-from app.core.GPTskillextraction_utils import llama_extract_skills_groq
-from app.core.skill_categorization import infer_skill_category
+from app.core.GPTskillextraction_utils import extract_resume_content, llama_extract_skills_groq
+# from app.core.skill_categorization import infer_skill_category
 from app.core.database import get_db
 from app.models.user import User
 import os
@@ -38,21 +40,44 @@ async def search_skills(
 
 @router.post("/skills/extract", response_model=List[SkillSchema])
 async def extract_skills(
-    resume_content: str = Body(..., embed=True),
+    file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
 ):
-    """Extract and categorize skills from resume content."""
+    """
+    Upload a PDF or .tex file, extract resume content, and identify categorized skills.
+    """
     try:
-        # Extract skills using Groq
-        categorized_skills = llama_extract_skills_groq(resume_content, groq_client, MODEL_NAME)
-        
+        # 1. Save uploaded file to a temp directory
+        with tempfile.NamedTemporaryFile(delete=False, suffix=file.filename) as tmp:
+            shutil.copyfileobj(file.file, tmp)
+            temp_path = tmp.name
+
+        # 2. Determine file type from extension
+        file_ext = file.filename.lower()
+        if file_ext.endswith(".pdf"):
+            file_type = "pdf"
+        elif file_ext.endswith(".tex"):
+            file_type = "tex"
+        else:
+            raise HTTPException(
+                status_code=400, detail="Unsupported file type. Please upload a PDF or .tex file."
+            )
+
+        # 3. Extract the resume text
+        resume_text = extract_resume_content(temp_path, file_type=file_type)
+        if not resume_text.strip():
+            raise HTTPException(status_code=400, detail="No content found in the resume.")
+
+        # 4. Extract skills using Groq + Llama
+        categorized_skills = llama_extract_skills_groq(resume_text, groq_client, MODEL_NAME)
         if not categorized_skills:
             raise HTTPException(
                 status_code=400,
-                detail="No skills could be extracted from the provided content"
+                detail="No skills could be extracted from the provided resume."
             )
 
+        # 5. Save the recognized skills to DB if they are new
         saved_skills = []
         for skill_name, category in categorized_skills:
             # Skip empty or invalid skills
@@ -63,25 +88,28 @@ async def extract_skills(
             skill = db.query(SkillModel).filter(
                 SkillModel.name.ilike(skill_name)
             ).first()
-            
+
             if not skill:
                 skill = SkillModel(
-                    name=skill_name,
-                    category=category,  # Use the category from LLM
+                    name=skill_name.strip(),
+                    category=category,
                     source="GPT"
                 )
                 db.add(skill)
                 try:
                     db.commit()
                     db.refresh(skill)
-                except Exception as e:
+                except Exception:
                     db.rollback()
+                    # Skip if error
                     continue
-                    
+
             saved_skills.append(skill)
-            
+
         return saved_skills
-        
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500,
