@@ -1,3 +1,4 @@
+# api/v1/auth.py
 from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -31,7 +32,7 @@ async def login(
     # Create access token
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": str(user.id)}, 
+        data={"sub": str(user.id)},  # Convert UUID to string
         expires_delta=access_token_expires
     )
     

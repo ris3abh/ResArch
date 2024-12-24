@@ -1,7 +1,6 @@
-# models/skills.py
-from sqlalchemy import Column, String, Integer, Enum, ForeignKey, Float
+from sqlalchemy import Column, String, Enum, ForeignKey, Float
 from sqlalchemy.orm import relationship
-from .base import BaseModel  # Change this from Base
+from .base import BaseModel, SQLiteUUID  # Import SQLiteUUID from base
 import enum
 
 class SkillCategory(enum.Enum):
@@ -9,19 +8,16 @@ class SkillCategory(enum.Enum):
     TECHNICAL = "technical"
     HARD = "hard"
 
-class Skill(BaseModel):  # Change from Base to BaseModel
+class Skill(BaseModel):
     name = Column(String, unique=True, nullable=False)
     category = Column(Enum(SkillCategory), nullable=False)
     source = Column(String, nullable=True)
-    description = Column(String, nullable=True)  # Add this line
-    
-    # No need to define __tablename__ as it comes from BaseModel
-    # No need to define id as it comes from BaseModel
+    description = Column(String, nullable=True)
 
-class UserSkill(BaseModel):  # Change from Base to BaseModel
-    user_id = Column(Integer, ForeignKey("user.id"), nullable=False)  # Change from users to user
-    skill_id = Column(Integer, ForeignKey("skill.id"), nullable=False)  # Change from skills to skill
+class UserSkill(BaseModel):
+    user_id = Column(SQLiteUUID(), ForeignKey("user.id"), nullable=False)
+    skill_id = Column(SQLiteUUID(), ForeignKey("skill.id"), nullable=False)
     rating = Column(Float, nullable=False, default=5.0)
 
-    skill = relationship("Skill", backref="user_skills")
+    skill = relationship("Skill", backref="user_skills", lazy="joined")
     user = relationship("User", back_populates="skills")

@@ -1,4 +1,5 @@
 // src/pages/HomePage.tsx
+
 import { 
   Box, 
   Button, 
@@ -10,6 +11,7 @@ import {
 import { useState } from 'react';
 import resumeImage from '../assets/resume.jpg';
 import { LoginModal } from '../components/auth/LoginModal';
+import FeatureShowcase from '../components/home/FeatureShowcase';
 import { SignupModal } from '../components/auth/SignupModal';
 
 const HomePage = () => {
@@ -18,36 +20,44 @@ const HomePage = () => {
   const [signupOpen, setSignupOpen] = useState(false);
 
   const handleLoginSuccess = () => {
-      console.log('Login successful');
+    console.log('Login successful');
   };
 
   const handleSignupSuccess = () => {
-      console.log('Signup successful');
+    console.log('Signup successful');
   };
 
   const switchToSignup = () => {
-      setLoginOpen(false);
-      setSignupOpen(true);
+    setLoginOpen(false);
+    setSignupOpen(true);
   };
 
   const switchToLogin = () => {
-      setSignupOpen(false);
-      setLoginOpen(true);
+    setSignupOpen(false);
+    setLoginOpen(true);
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', backgroundColor: '#FAFAFA' }}>
-      <Container maxWidth={'xl'} sx={{ width: '100%', py: 8 }}>
+    <Box 
+      sx={{ 
+        minHeight: '100vh',
+        // White at the top, purple at the bottom:
+        // You can adjust the color stops and purple shade as desired.
+        background: '#FFFFFF'
+      }}
+    >
+      <Container maxWidth="xl" sx={{ width: '100%', py: 4 }}>
+        {/* Hero Section with Title, Buttons, and Image */} s
         <Box 
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center', // Changed from space-between to center
-              gap: 4,
-              minHeight: 'calc(100vh - 64px)',
-              flexDirection: { xs: 'column', md: 'row' }
-            }}
-          >
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+            minHeight: 'calc(100vh - 64px)',
+            flexDirection: { xs: 'column', md: 'row' }
+          }}
+        >
           {/* Left Section - Text Content */}
           <Box sx={{ flex: 1, maxWidth: { xs: '100%', md: '50%' } }}>
             <Typography 
@@ -90,101 +100,113 @@ const HomePage = () => {
               formatting, and industry-specific keywords to maximize your chances of success.
             </Typography>
 
-            <Stack 
-          direction={{ xs: 'column', sm: 'row' }} 
-          spacing={2}
-        >
-          <Button
-            variant="contained"
-            size="large"
-            onClick={() => setSignupOpen(true)}
-            sx={{
-              px: 4,
-              py: 1.5,
-              backgroundColor: theme.palette.deepPurple.main,
-              boxShadow: `0 0 20px ${theme.palette.deepPurple.main}`,
-              '&:hover': {
-                backgroundColor: theme.palette.navy.main,
-                boxShadow: `0 0 25px ${theme.palette.navy.main}`,
-              }
-            }}
-          >
-            Get Started
-          </Button>
-          <Button
-            variant="outlined"
-            size="large"
-            onClick={() => setLoginOpen(true)}
-            sx={{
-              px: 4,
-              py: 1.5,
-              borderColor: theme.palette.deepPurple.main,
-              color: theme.palette.deepPurple.main,
-              '&:hover': {
-                borderColor: theme.palette.navy.main,
-                color: theme.palette.navy.main,
-                backgroundColor: 'transparent',
-              }
-            }}
-          >
-            Login
-          </Button>
-        </Stack>
-
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <Button
+                variant="contained"
+                size="large"
+                onClick={() => setSignupOpen(true)}
+                sx={{
+                  px: 4,
+                  py: 1.5,
+                  backgroundColor: theme.palette.deepPurple.main,
+                  boxShadow: `0 0 20px ${theme.palette.deepPurple.main}`,
+                  '&:hover': {
+                    backgroundColor: theme.palette.navy.main,
+                    boxShadow: `0 0 25px ${theme.palette.navy.main}`,
+                  }
+                }}
+              >
+                Get Started
+              </Button>
+              <Button
+                variant="outlined"
+                size="large"
+                onClick={() => setLoginOpen(true)}
+                sx={{
+                  px: 4,
+                  py: 1.5,
+                  borderColor: theme.palette.deepPurple.main,
+                  color: theme.palette.deepPurple.main,
+                  '&:hover': {
+                    borderColor: theme.palette.navy.main,
+                    color: theme.palette.navy.main,
+                    backgroundColor: 'transparent',
+                  }
+                }}
+              >
+                Login
+              </Button>
+            </Stack>
           </Box>
 
           {/* Right Section - Resume Image */}
           <Box 
-          sx={{ 
-            flex: 1,
-            maxWidth: { xs: '100%', md: '50%' },
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <Box
-            sx={{
-              width: '100%',
-              maxWidth: 900,
-              height: 600,
-              backgroundColor: theme.palette.lavender.main,
-              borderRadius: '30px',
-              padding: 4,
+            sx={{ 
+              flex: 1,
+              maxWidth: { xs: '100%', md: '50%' },
               display: 'flex',
-              alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 10px 30px rgba(167, 130, 236, 0.3)',
+              alignItems: 'center',
             }}
           >
             <Box
-              component="img"
-              src={resumeImage}
-              alt="Resume Preview"
               sx={{
                 width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                borderRadius: '20px',
-                boxShadow: '0 5px 15px rgba(0, 0, 0, 0.1)'
+                maxWidth: 900,
+                height: 600,
+                backgroundColor: theme.palette.lavender.main,
+                borderRadius: '30px',
+                padding: 4,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 10px 30px rgba(167, 130, 236, 0.3)',
               }}
-            />
-          </Box>
+            >
+              <Box
+                component="img"
+                src={resumeImage}
+                alt="Resume Preview"
+                sx={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  borderRadius: '20px',
+                  boxShadow: '0 5px 15px rgba(0, 0, 0, 0.1)'
+                }}
+              />
+            </Box>
           </Box>
         </Box>
+
+        {/* Modals for Authentication */}
         <LoginModal 
-            open={loginOpen}
-            onClose={() => setLoginOpen(false)}
-            onSuccess={handleLoginSuccess}
-            onSwitchToSignup={switchToSignup}
+          open={loginOpen}
+          onClose={() => setLoginOpen(false)}
+          onSuccess={handleLoginSuccess}
+          onSwitchToSignup={switchToSignup}
         />
         <SignupModal
-            open={signupOpen}
-            onClose={() => setSignupOpen(false)}
-            onSuccess={handleSignupSuccess}
-            onSwitchToLogin={switchToLogin}
+          open={signupOpen}
+          onClose={() => setSignupOpen(false)}
+          onSuccess={handleSignupSuccess}
+          onSwitchToLogin={switchToLogin}
         />
       </Container>
+
+      {/* Centered FeatureShowcase Section */}
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          py: 0,
+        }}
+      >
+        <Container maxWidth="xl" sx={{ width: '100%', py: 0 }}>
+          <FeatureShowcase />
+        </Container>
+      </Box>
     </Box>
   );
 };

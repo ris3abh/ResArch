@@ -118,3 +118,26 @@ const Dashboard: React.FC = () => {
 };
 
 export default Dashboard;
+
+// The dashboard presents a comprehensive skill management
+// interface where users can upload their LaTeX resume and 
+// manage their professional skills. On the left, it displays 
+// the resume with a PDF preview, while the right section 
+// organizes skills into three categories: Technical, Soft, 
+// and Hard skills. The system uses the Llama 3 8B model 
+// (with an 8192 token context window) through the Groq API 
+// to intelligently extract and categorize skills from the 
+// uploaded resume. These extracted skills appear as 
+// grey chips in their respective categories, indicating 
+// they need user validation through ratings. 
+// Users can also manually search for and add skills using 
+// the search bar, edit existing skills to update their 
+// proficiency ratings (on a scale of 1-10), and delete skills
+// they no longer want to showcase. Each skill is visually 
+// represented by a chip whose color reflects the proficiency 
+// level - from red (beginner) to green (expert). The interface 
+// maintains state across components, ensuring that whether skills 
+// are added manually, imported from a resume, or modified, 
+// they're consistently displayed and can be saved to the backend 
+// in a structured format that categorizes them as technical_skills, 
+// soft_skills, or hard_skills.

@@ -2,23 +2,25 @@
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
+from uuid import UUID
 
 class ResumeBase(BaseModel):
     content: str
-    template_id: Optional[str] = None
+    template_id: Optional[UUID] = None
 
 class ResumeCreate(ResumeBase):
     pass
 
 class Resume(ResumeBase):
-    id: int
-    user_id: int
+    id: UUID
+    user_id: UUID
     created_at: datetime
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
+# Add back these classes that were missing
 class LatexCompileRequest(BaseModel):
     content: str
 

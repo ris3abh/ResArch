@@ -1,8 +1,10 @@
+# schemas/base.py
 from pydantic import BaseModel
 from datetime import datetime
+from uuid import UUID
 
 class BaseSchema(BaseModel):
-    id: int | None = None
+    id: UUID | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
 

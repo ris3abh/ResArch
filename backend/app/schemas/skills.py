@@ -1,6 +1,7 @@
 # schemas/skills.py
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict
+from uuid import UUID
 from enum import Enum
 
 class SkillCategory(str, Enum):
@@ -16,27 +17,27 @@ class SkillCreate(SkillBase):
     source: Optional[str] = None
 
 class Skill(SkillBase):
-    id: int
+    id: UUID
     source: Optional[str]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class UserSkillBase(BaseModel):
-    skill_id: int
-    rating: float = Field(ge=0, le=10)  # Rating between 0 and 5
+    skill_id: UUID
+    rating: float = Field(ge=0, le=10)
 
 class UserSkillCreate(UserSkillBase):
     pass
 
 class UserSkill(UserSkillBase):
-    id: int
+    id: UUID
     skill: Skill
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
-# New schemas for batch operations
+# Rest of the schemas remain the same
 class SkillWithRating(BaseModel):
     name: str
     rating: float = Field(ge=1, le=10)
@@ -46,7 +47,6 @@ class BatchSkillsByCategory(BaseModel):
     soft_skills: List[SkillWithRating] = []
     technical_skills: List[SkillWithRating] = []
 
-# Schema for individual skill creation with category
 class SingleSkillCreate(BaseModel):
     name: str
     rating: float = Field(ge=1, le=10)

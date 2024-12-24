@@ -1,4 +1,5 @@
-from sqlalchemy import Column, String, Integer, ForeignKey, Text, Boolean, DateTime
+from sqlalchemy import Column, String, ForeignKey, Text, Boolean, DateTime
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from .base import BaseModel
@@ -18,19 +19,17 @@ class Template(BaseModel):
     name = Column(String, nullable=False)
     description = Column(String)
     content = Column(Text, nullable=False)  # LaTeX content
-    user_id = Column(Integer, ForeignKey('user.id'))
-    predefined_template_id = Column(Integer, ForeignKey('predefined_templates.id'), nullable=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey('user.id'))
+    predefined_template_id = Column(UUID(as_uuid=True), ForeignKey('predefined_templates.id'), nullable=True)
     
     # Fields for file storage URLs and paths
-    tex_url = Column(String, nullable=True)  # Cloudinary URL for .tex
-    pdf_url = Column(String, nullable=True)  # Cloudinary URL for .pdf
-    pdf_path = Column(String, nullable=True)  # Local temp path for .pdf
-    unique_id = Column(String, nullable=True)  # Unique identifier for temp files
+    tex_url = Column(String, nullable=True)
+    pdf_url = Column(String, nullable=True)
+    pdf_path = Column(String, nullable=True)
+    unique_id = Column(String, nullable=True)
     
-    # New fields for template status
     is_finalized = Column(Boolean, default=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # Relationships
     user = relationship("User", backref="templates")
     base_template = relationship("PredefinedTemplate")

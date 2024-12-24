@@ -1,5 +1,7 @@
+# schemas/user.py
 from pydantic import BaseModel, EmailStr
 from .base import BaseSchema
+from uuid import UUID
 
 class UserBase(BaseModel):
     email: EmailStr

@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
-
+from uuid import UUID
+ 
 from app.core.database import get_db
 from app.core.auth import get_current_active_user
 from app.core.auth import get_password_hash
@@ -60,7 +61,7 @@ async def update_user_me(
 
 @router.get("/{user_id}", response_model=User)
 async def read_user(
-    user_id: int,
+    user_id: UUID,  # Change from int to UUID
     db: Session = Depends(get_db),
     current_user: UserModel = Depends(get_current_active_user)
 ):

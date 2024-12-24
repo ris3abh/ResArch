@@ -11,3 +11,5 @@ class User(BaseModel):
     github_username = Column(String)
     
     skills = relationship("UserSkill", back_populates="user")
+    profile = relationship("UserProfile", back_populates="user", uselist=False)
+    # job_applications = relationship("JobApplication", back_populates="user")

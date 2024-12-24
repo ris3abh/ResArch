@@ -1,4 +1,5 @@
 // src/App.tsx
+import React from 'react';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { theme } from './theme/theme';
@@ -6,11 +7,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import Dashboard from './pages/Dashboard';
-import ProtectedRoute from './components/ProtectedRoutes';
 import TemplatesPage from './pages/Template';
+import WorkProfile from './pages/WorkProfile'; // <-- import new page
+import ProtectedRoute from './components/ProtectedRoutes';
 import { Box } from '@mui/material';
 
-// Import fonts
 import '@fontsource/roboto/300.css';
 import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
@@ -30,7 +31,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <Box 
+        <Box
           sx={{ 
             display: 'flex',
             flexDirection: 'column',
@@ -49,6 +50,15 @@ function App() {
                     <Dashboard />
                   </ProtectedRoute>
                 } 
+              />
+              {/* Add the new WorkProfile route */}
+              <Route
+                path="/workprofile"
+                element={
+                  <ProtectedRoute>
+                    <WorkProfile />
+                  </ProtectedRoute>
+                }
               />
             </Routes>
           </BrowserRouter>

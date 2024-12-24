@@ -103,6 +103,52 @@ export interface PredefinedTemplate {
   content: string;
 }
 
+// Profile Types (if you are using an enum for profile_type)
+export enum ProfileType {
+  ACADEMIC = 'ACADEMIC',
+  PROFESSIONAL = 'PROFESSIONAL',
+}
+
+// Represents the data needed to create or update a user profile
+export interface UserProfileCreate {
+  profile_type?: ProfileType; // adjust fields as needed
+  headline?: string;
+  bio?: string;
+  // add additional fields that your backend expects
+}
+
+// Represents the user profile returned from the backend
+export interface UserProfile {
+  id: string;
+  user_id: number;
+  profile_type?: ProfileType;
+  headline?: string;
+  bio?: string;
+  // any other fields on your UserProfile model
+}
+
+// Represents the data needed to create a work experience entry
+export interface WorkExperienceCreate {
+  position: string;
+  company_name: string;
+  start_date: string; // or Date if you convert
+  end_date?: string;  // or Date if you convert
+  description?: string;
+  // any other fields your backend expects
+}
+
+// Represents the work experience returned from the backend
+export interface WorkExperience {
+  id: string;
+  profile_id: string;
+  position: string;
+  company_name: string;
+  start_date: string;
+  end_date?: string;
+  description?: string;
+  // any other fields on your WorkExperience model
+}
+
 type Headers = Record<string, string>;
 
 // API Helper Functions
@@ -372,6 +418,170 @@ export class Api {
     } catch (error) {
       return {
         error: 'Failed to save skills batch',
+        status: 500,
+      };
+    }
+  }
+
+  /**
+   * Create or update user profile setting (Academic/Professional)
+   * POST /profile/setting
+   */
+  async createOrUpdateProfileSetting(
+    profile: UserProfileCreate
+  ): Promise<ApiResponse<UserProfile>> {
+    try {
+      const response = await fetch(`${this.baseUrl}/profile/profile/setting`, {
+        method: 'POST',
+        headers: getAuthHeader(),
+        body: JSON.stringify(profile),
+      });
+
+      return handleResponse<UserProfile>(response);
+    } catch (error) {
+      return {
+        error: 'Failed to create or update profile setting',
+        status: 500,
+      };
+    }
+  }
+
+  /**
+   * Add a new work experience entry
+   * POST /profile/experience
+   */
+  async addWorkExperience(
+    experience: WorkExperienceCreate
+  ): Promise<ApiResponse<WorkExperience>> {
+    try {
+      const response = await fetch(`${this.baseUrl}/profile/profile/experience`, {
+        method: 'POST',
+        headers: getAuthHeader(),
+        body: JSON.stringify(experience),
+      });
+
+      return handleResponse<WorkExperience>(response);
+    } catch (error) {
+      return {
+        error: 'Failed to add work experience',
+        status: 500,
+      };
+    }
+  }
+
+  /**
+   * Add multiple work experiences at once
+   * POST /profile/experiences/bulk
+   */
+  async addWorkExperiencesBulk(
+    experiences: WorkExperienceCreate[]
+  ): Promise<ApiResponse<WorkExperience[]>> {
+    try {
+      const response = await fetch(`${this.baseUrl}/profile/profile/experiences/bulk`, {
+        method: 'POST',
+        headers: getAuthHeader(),
+        body: JSON.stringify(experiences),
+      });
+
+      return handleResponse<WorkExperience[]>(response);
+    } catch (error) {
+      return {
+        error: 'Failed to add work experiences in bulk',
+        status: 500,
+      };
+    }
+  }
+
+  /**
+   * Get all work experiences for current user
+   * GET /profile/experiences
+   */
+  async getWorkExperiences(): Promise<ApiResponse<WorkExperience[]>> {
+    try {
+      const response = await fetch(`${this.baseUrl}/profile/profile/experiences`, {
+        headers: getAuthHeader(),
+      });
+
+      return handleResponse<WorkExperience[]>(response);
+    } catch (error) {
+      return {
+        error: 'Failed to get work experiences',
+        status: 500,
+      };
+    }
+  }
+
+  /**
+   * Get a specific work experience entry
+   * GET /profile/experience/{experience_id}
+   */
+  async getWorkExperience(
+    experienceId: string
+  ): Promise<ApiResponse<WorkExperience>> {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/profile/profile/experience/${experienceId}`,
+        {
+          headers: getAuthHeader(),
+        }
+      );
+
+      return handleResponse<WorkExperience>(response);
+    } catch (error) {
+      return {
+        error: 'Failed to get work experience',
+        status: 500,
+      };
+    }
+  }
+
+  /**
+   * Update a work experience entry
+   * PUT /profile/experience/{experience_id}
+   */
+  async updateWorkExperience(
+    experienceId: string,
+    updatedExperience: WorkExperienceCreate
+  ): Promise<ApiResponse<WorkExperience>> {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/profile/profile/experience/${experienceId}`,
+        {
+          method: 'PUT',
+          headers: getAuthHeader(),
+          body: JSON.stringify(updatedExperience),
+        }
+      );
+
+      return handleResponse<WorkExperience>(response);
+    } catch (error) {
+      return {
+        error: 'Failed to update work experience',
+        status: 500,
+      };
+    }
+  }
+
+  /**
+   * Delete a work experience entry
+   * DELETE /profile/experience/{experience_id}
+   */
+  async deleteWorkExperience(
+    experienceId: string
+  ): Promise<ApiResponse<{ message: string }>> {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/profile/profile/experience/${experienceId}`,
+        {
+          method: 'DELETE',
+          headers: getAuthHeader(),
+        }
+      );
+
+      return handleResponse<{ message: string }>(response);
+    } catch (error) {
+      return {
+        error: 'Failed to delete work experience',
         status: 500,
       };
     }

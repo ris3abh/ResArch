@@ -1,3 +1,4 @@
+# core/auth.py
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
@@ -8,11 +9,9 @@ from sqlalchemy.orm import Session
 from app.core.settings import settings
 from app.models.user import User
 from app.core.database import get_db
+from uuid import UUID
 
-# Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-# OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login")
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -28,6 +27,10 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     else:
         expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     
+    # Convert UUID to string if present
+    if 'sub' in to_encode and isinstance(to_encode['sub'], UUID):
+        to_encode['sub'] = str(to_encode['sub'])
+        
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(
         to_encode, 
@@ -55,10 +58,17 @@ async def get_current_user(
         user_id: str = payload.get("sub")
         if user_id is None:
             raise credentials_exception
+            
+        # Convert string to UUID for database query
+        try:
+            user_uuid = UUID(user_id)
+        except ValueError:
+            raise credentials_exception
+            
     except JWTError:
         raise credentials_exception
         
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.query(User).filter(User.id == user_uuid).first()
     if user is None:
         raise credentials_exception
     return user

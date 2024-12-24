@@ -5,6 +5,7 @@ import { Save } from '@mui/icons-material';
 import ExpandableTabs from './skills/ExpandableTabs';
 import SkillSearchBar from './skills/SkillSearchBar';
 import { api } from '../../services/api';
+import { useNavigate } from 'react-router-dom';
 import type { SkillCategory, BatchSkillsByCategory, Skill } from '../../services/api';
 
 type SkillsState = BatchSkillsByCategory & {
@@ -17,6 +18,8 @@ interface SkillsSectionProps {
 }
 
 const SkillsSection: React.FC<SkillsSectionProps> = ({ importedResumeSkills }) => {
+  const navigate = useNavigate();  // <-- new
+
   const [skillsState, setSkillsState] = useState<SkillsState>({
     hard_skills: [],
     soft_skills: [],
@@ -175,11 +178,14 @@ const SkillsSection: React.FC<SkillsSectionProps> = ({ importedResumeSkills }) =
 
   const handleSaveAllSkills = async () => {
     try {
-      const response = await api.saveBatchSkills(skillsState); // hypothetical
+      const response = await api.saveBatchSkills(skillsState);
       if (response.error) {
         throw new Error(response.error);
       }
       console.log('All skills saved successfully');
+      
+      // Navigate to /workprofile after saving
+      navigate('/workprofile');
     } catch (error) {
       console.error('Error saving skills:', error);
     }
